@@ -1,0 +1,1988 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dasar JavaScript, DOM & Event Handling — Materi Interaktif</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #0f1117;
+            --bg-card: #181b24;
+            --bg-code: #1e2230;
+            --fg: #e8e6e3;
+            --fg-muted: #8b8d94;
+            --accent: #f59e0b;
+            --accent2: #10b981;
+            --accent3: #ef4444;
+            --border: #2a2d3a;
+            --js-yellow: #f7df1e;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            overflow-x: hidden;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        /* Kode editor */
+        .code-editor {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            color: #c9d1d9;
+            font-size: 13.5px;
+            line-height: 1.7;
+            resize: vertical;
+            width: 100%;
+            min-height: 120px;
+            outline: none;
+            tab-size: 2;
+            transition: border-color 0.3s;
+        }
+        .code-editor:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+        }
+
+        /* Output panel */
+        .output-panel {
+            background: #111318;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            min-height: 60px;
+            color: var(--accent2);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0; top: 0;
+            width: 280px;
+            height: 100vh;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            z-index: 100;
+            overflow-y: auto;
+            transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+        }
+        .sidebar.collapsed { transform: translateX(-280px); }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            color: var(--fg-muted);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            border-left: 3px solid transparent;
+            transition: all 0.25s;
+        }
+        .sidebar-link:hover, .sidebar-link.active {
+            color: var(--fg);
+            background: rgba(245, 158, 11, 0.06);
+            border-left-color: var(--accent);
+        }
+        .sidebar-link.active { font-weight: 700; }
+        .sidebar-link i { width: 20px; text-align: center; font-size: 13px; }
+
+        .sidebar-section-title {
+            padding: 20px 20px 8px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--fg-muted);
+        }
+
+        /* Main content */
+        .main-content {
+            margin-left: 280px;
+            min-height: 100vh;
+            transition: margin-left 0.35s cubic-bezier(0.4,0,0.2,1);
+        }
+        .main-content.expanded { margin-left: 0; }
+
+        /* Section */
+        .section-block {
+            padding: 60px 48px;
+            border-bottom: 1px solid var(--border);
+        }
+        @media (max-width: 768px) {
+            .section-block { padding: 40px 20px; }
+            .sidebar { transform: translateX(-280px); }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .main-content { margin-left: 0 !important; }
+        }
+
+        /* Tag / Badge */
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        /* Hero */
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            z-index: 0;
+        }
+        .hero-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.15;
+            animation: float 8s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -20px) scale(1.1); }
+            66% { transform: translate(-20px, 15px) scale(0.95); }
+        }
+
+        /* Demo area styling */
+        .demo-box {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            position: relative;
+        }
+
+        /* Tombol jalankan */
+        .btn-run {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 24px;
+            background: var(--accent);
+            color: #000;
+            font-weight: 700;
+            font-size: 14px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-run:hover {
+            background: #d97706;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+        .btn-run:active { transform: translateY(0); }
+
+        .btn-reset {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 24px;
+            background: transparent;
+            color: var(--fg-muted);
+            font-weight: 600;
+            font-size: 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-reset:hover {
+            border-color: var(--accent3);
+            color: var(--accent3);
+        }
+
+        /* Tipe data table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th {
+            text-align: left;
+            padding: 12px 16px;
+            background: var(--bg-code);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--fg-muted);
+            border-bottom: 2px solid var(--accent);
+        }
+        .data-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+        .data-table tr:hover td {
+            background: rgba(245, 158, 11, 0.04);
+        }
+        .data-table code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-code);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: var(--accent);
+        }
+
+        /* DOM Demo target */
+        #dom-demo-area {
+            background: #111318;
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            min-height: 120px;
+            transition: all 0.3s;
+        }
+        #dom-demo-area.flash {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+        }
+
+        /* Event demo */
+        .event-target {
+            width: 120px;
+            height: 120px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+            user-select: none;
+        }
+
+        /* Floating particles */
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particleFloat linear infinite;
+        }
+        @keyframes particleFloat {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+        }
+
+        /* Hamburger */
+        .hamburger {
+            display: none;
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 200;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            cursor: pointer;
+            color: var(--fg);
+            font-size: 18px;
+        }
+        @media (max-width: 768px) {
+            .hamburger { display: block; }
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .toast {
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            animation: toastIn 0.4s cubic-bezier(0.4,0,0.2,1);
+            max-width: 320px;
+        }
+        .toast.success { background: #065f46; color: #6ee7b7; border: 1px solid #10b981; }
+        .toast.error { background: #7f1d1d; color: #fca5a5; border: 1px solid #ef4444; }
+        .toast.info { background: #78350f; color: #fcd34d; border: 1px solid #f59e0b; }
+        @keyframes toastIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Smooth scroll */
+        html { scroll-behavior: smooth; }
+
+        /* Intersection observer reveal */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s cubic-bezier(0.4,0,0.2,1);
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Progress bar */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            z-index: 9999;
+            transition: width 0.15s;
+        }
+
+        /* Inline code */
+        p code, li code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-code);
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: var(--accent);
+        }
+
+        /* Keyboard shortcut tag */
+        kbd {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 12px;
+            color: var(--fg-muted);
+        }
+
+        /* Color swatch */
+        .color-swatch {
+            width: 40px; height: 40px;
+            border-radius: 8px;
+            display: inline-block;
+            border: 2px solid var(--border);
+            transition: transform 0.2s;
+        }
+        .color-swatch:hover { transform: scale(1.15); }
+    </style>
+</head>
+<body>
+
+<!-- Progress Bar -->
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- Hamburger Menu -->
+<button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu">
+    <i class="fas fa-bars"></i>
+</button>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Sidebar Navigasi -->
+<nav class="sidebar" id="sidebar">
+    <div style="padding: 24px 20px 16px; border-bottom: 1px solid var(--border);">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:36px; height:36px; background: var(--js-yellow); border-radius:8px; display:flex; align-items:center; justify-content:center;">
+                <span style="font-weight:900; font-size:16px; color:#000;">JS</span>
+            </div>
+            <div>
+                <div style="font-weight:800; font-size:15px; color:var(--fg);">Materi Interaktif</div>
+                <div style="font-size:11px; color:var(--fg-muted);">JavaScript & DOM</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar-section-title">Dasar JavaScript</div>
+    <a href="#variabel" class="sidebar-link" data-section="variabel">
+        <i class="fas fa-box"></i> Variabel & Tipe Data
+    </a>
+    <a href="#operator" class="sidebar-link" data-section="operator">
+        <i class="fas fa-calculator"></i> Operator
+    </a>
+    <a href="#kontrol" class="sidebar-link" data-section="kontrol">
+        <i class="fas fa-code-branch"></i> Alur Kontrol
+    </a>
+    <a href="#fungsi" class="sidebar-link" data-section="fungsi">
+        <i class="fas fa-cube"></i> Fungsi
+    </a>
+    <a href="#array-objek" class="sidebar-link" data-section="array-objek">
+        <i class="fas fa-layer-group"></i> Array & Objek
+    </a>
+
+    <div class="sidebar-section-title">Manipulasi DOM</div>
+    <a href="#dom-select" class="sidebar-link" data-section="dom-select">
+        <i class="fas fa-crosshairs"></i> Memilih Elemen
+    </a>
+    <a href="#dom-modify" class="sidebar-link" data-section="dom-modify">
+        <i class="fas fa-pen"></i> Mengubah Konten
+    </a>
+    <a href="#dom-style" class="sidebar-link" data-section="dom-style">
+        <i class="fas fa-palette"></i> Mengubah Style
+    </a>
+    <a href="#dom-create" class="sidebar-link" data-section="dom-create">
+        <i class="fas fa-plus-circle"></i> Membuat & Menghapus
+    </a>
+
+    <div class="sidebar-section-title">Event Handling</div>
+    <a href="#event-basic" class="sidebar-link" data-section="event-basic">
+        <i class="fas fa-mouse-pointer"></i> Event Dasar
+    </a>
+    <a href="#event-object" class="sidebar-link" data-section="event-object">
+        <i class="fas fa-info-circle"></i> Event Object
+    </a>
+    <a href="#event-adv" class="sidebar-link" data-section="event-adv">
+        <i class="fas fa-bolt"></i> Teknik Lanjutan
+    </a>
+
+    <div style="padding: 20px;">
+        <div style="background: var(--bg-code); border-radius:10px; padding:16px; border:1px solid var(--border);">
+            <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:6px;">
+                <i class="fas fa-lightbulb"></i> Tips Mahasiswa
+            </div>
+            <div style="font-size:12px; color:var(--fg-muted); line-height:1.6;">
+                Gunakan editor kode live untuk demo langsung anda bisa melihat hasil kode secara real-time.
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Konten Utama -->
+<main class="main-content" id="mainContent">
+
+    <!-- ============ HERO ============ -->
+    <section style="position:relative; min-height:85vh; display:flex; align-items:center; padding:60px 48px; overflow:hidden;">
+        <div class="hero-bg">
+            <div class="hero-blob" style="width:500px; height:500px; background:var(--accent); top:-100px; right:-100px; animation-delay:0s;"></div>
+            <div class="hero-blob" style="width:400px; height:400px; background:var(--accent2); bottom:-80px; left:-80px; animation-delay:2s;"></div>
+            <div class="hero-blob" style="width:300px; height:300px; background:var(--accent3); top:50%; left:50%; animation-delay:4s;"></div>
+            <canvas id="heroCanvas" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
+        </div>
+
+        <div style="position:relative; z-index:1; max-width:720px;">
+            <div class="tag" style="background:rgba(245,158,11,0.15); color:var(--accent); margin-bottom:20px;">
+                <i class="fas fa-graduation-cap"></i> Materi Perkuliahan Interaktif
+            </div>
+            <h1 style="font-size:clamp(36px,5vw,56px); font-weight:900; line-height:1.1; margin-bottom:20px;">
+                Dasar <span style="color:var(--js-yellow); text-shadow:0 0 30px rgba(247,223,30,0.3);">JavaScript</span>,
+                <br>Manipulasi <span style="color:var(--accent2);">DOM</span>,
+                <br>& Event <span style="color:var(--accent3);">Handling</span>
+            </h1>
+            <p style="font-size:18px; color:var(--fg-muted); line-height:1.7; max-width:560px; margin-bottom:32px;">
+                Pelajari tiga pilar fundamental pengembangan web interaktif melalui demo langsung, editor kode live, dan visualisasi real-time.
+            </p>
+            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                <a href="#variabel" class="btn-run" style="text-decoration:none;">
+                    <i class="fas fa-play"></i> Mulai Belajar
+                </a>
+                <a href="#live-editor" class="btn-reset" style="text-decoration:none;">
+                    <i class="fas fa-code"></i> Live Editor
+                </a>
+            </div>
+
+            <div style="display:flex; gap:32px; margin-top:48px; flex-wrap:wrap;">
+                <div>
+                    <div style="font-size:32px; font-weight:900; color:var(--accent);">13</div>
+                    <div style="font-size:13px; color:var(--fg-muted);">Sub Materi</div>
+                </div>
+                <div>
+                    <div style="font-size:32px; font-weight:900; color:var(--accent2);">8+</div>
+                    <div style="font-size:13px; color:var(--fg-muted);">Demo Interaktif</div>
+                </div>
+                <div>
+                    <div style="font-size:32px; font-weight:900; color:var(--accent3);">1</div>
+                    <div style="font-size:13px; color:var(--fg-muted);">Live Editor</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ BAGIAN 1: DASAR JAVASCRIPT ============ -->
+    <div style="padding:8px 48px;">
+        <div class="tag" style="background:rgba(247,223,30,0.12); color:var(--js-yellow);">
+            <i class="fas fa-book"></i> Bagian 1
+        </div>
+        <h2 style="font-size:36px; font-weight:900; margin-top:8px;">Dasar JavaScript</h2>
+        <p style="color:var(--fg-muted); margin-top:8px; max-width:600px; line-height:1.7;">Fondasi sintaks, tipe data, operator, alur kontrol, fungsi, dan struktur data yang menjadi dasar semua program JavaScript.</p>
+    </div>
+
+    <!-- Variabel & Tipe Data -->
+    <section id="variabel" class="section-block reveal">
+        <h3 style="font-size:24px; font-weight:800; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+            <span style="width:32px; height:32px; background:var(--accent); color:#000; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:900;">1</span>
+            Variabel & Tipe Data
+        </h3>
+        <p style="color:var(--fg-muted); line-height:1.8; margin-bottom:24px; max-width:700px;">
+            Variabel adalah wadah untuk menyimpan data. JavaScript memiliki tiga cara mendeklarasikan variabel: <code>var</code>, <code>let</code>, dan <code>const</code>. Setiap variabel memiliki tipe data yang menentukan jenis nilai yang disimpan.
+        </p>
+
+        <!-- Tabel perbandingan var/let/const -->
+        <div style="overflow-x:auto; margin-bottom:28px;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Fitur</th>
+                        <th><code>var</code></th>
+                        <th><code>let</code></th>
+                        <th><code>const</code></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Cakupan (Scope)</td><td>Function scope</td><td>Block scope</td><td>Block scope</td></tr>
+                    <tr><td>Hoisting</td><td>Ya (di-inisialisasi undefined)</td><td>Ya (TDZ)</td><td>Ya (TDZ)</td></tr>
+                    <tr><td>Re-assign</td><td style="color:var(--accent2);">Boleh</td><td style="color:var(--accent2);">Boleh</td><td style="color:var(--accent3);">Tidak</td></tr>
+                    <tr><td>Re-declare</td><td style="color:var(--accent2);">Boleh</td><td style="color:var(--accent3);">Tidak</td><td style="color:var(--accent3);">Tidak</td></tr>
+                    <tr><td>Praktik Terbaik</td><td style="color:var(--accent3);">Hindari</td><td style="color:var(--accent2);">Disarankan</td><td style="color:var(--accent2);">Disarankan</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Tipe Data -->
+        <h4 style="font-weight:700; margin-bottom:16px; color:var(--accent);">7 Tipe Data Primitif JavaScript</h4>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:12px; margin-bottom:28px;">
+            <div style="background:var(--bg-code); border:1px solid var(--border); border-radius:10px; padding:16px;">
+                <div style="font-weight:700; font-size:15px; margin-bottom:4px;">String</div>
+                <code style="font-size:12px;">"Halo Dunia"</code>
+                <div style="font-size:11px; color:var(--fg-muted); margin-top:6px;">Teks / karakter</div>
+            </div>
+            <div style="background:var(--bg-code); border:1px solid var(--border); border-radius:10px; padding:16px;">
+                <div style="font-weight:700; font-size:15px; margin-bottom:4px;">Number</div>
+                <code style="font-size:12px;">42, 3.14</code>
+                <div style="font-size:11px; color:var(--fg-muted); margin-top:6px;">Bilangan (int & float)</div>
+            </div>
+            <div style="background:var(--bg-code); border:1px solid var(--border); border-radius:10px; padding:16px;">
+                <div style="font-weight:700; font-size:15px; margin-bottom:4px;">Boolean</div>
+                <code style="font-size:12px;">true / false</code>
+                <div style="font-size:11px; color:var(--fg-muted); margin-top:6px;">Logika benar/salah</div>
+            </div>
+            <div style="background:var(--bg-code); border:1px solid var(--border); border-radius:10px; padding:16px;">
+                <div style="font-weight:700; font-size:15px; margin-bottom:4px;">Undefined</div>
+                <code style="font-size:12px;">undefined</code>
+                <div style="font-size:11px; color:var(--fg-muted); margin-top:6px;">Belum didefinisikan</div>
+            </div>
+            <div style="background:var(--bg-code); border:1px solid var(--border); border-radius:10px; padding:16px;">
+                <div style="font-weight:700; font-size:15px; margin-bottom:4px;">Null</div>
+                <code style="font-size:12px;">null</code>
+                <div style="font-size:11px; color:var(--fg-muted); margin-top:6px;">Kosong secara sengaja</div>
+            </div>
+            <div style="background:var(--bg-code); border:1px solid var(--border); border-radius:10px; padding:16px;">
+                <div style="font-weight:700; font-size:15px; margin-bottom:4px;">BigInt</div>
+                <code style="font-size:12px;">9007199254740991n</code>
+                <div style="font-size:11px; color:var(--fg-muted); margin-top:6px;">Bilangan sangat besar</div>
+            </div>
+            <div style="background:var(--bg-code); border:1px solid var(--border); border-radius:10px; padding:16px;">
+                <div style="font-weight:700; font-size:15px; margin-bottom:4px;">Symbol</div>
+                <code style="font-size:12px;">Symbol("id")</code>
+                <div style="font-size:11px; color:var(--fg-muted); margin-top:6px;">Identifier unik</div>
+            </div>
+        </div>
+
+        <!-- Demo Live -->
+        <div class="demo-box">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px;">
+                <span style="width:10px;height:10px;border-radius:50%;background:#ef4444;"></span>
+                <span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;"></span>
+                <span style="width:10px;height:10px;border-radius:50%;background:#10b981;"></span>
+                <span style="font-size:12px; color:var(--fg-muted); margin-left:8px;">demo-variabel.js</span>
+            </div>
+            <textarea class="code-editor" id="code-variabel" spellcheck="false">// Deklarasi variabel dengan let dan const
+let nama = "Budi Santoso";
+const PI = 3.14159;
+let umur = 22;
+let mahasiswa = true;
+
+// Cek tipe data dengan typeof
+console.log("Nama  : " + nama + " (tipe: " + typeof nama + ")");
+console.log("PI    : " + PI + " (tipe: " + typeof PI + ")");
+console.log("Umur  : " + umur + " (tipe: " + typeof umur + ")");
+console.log("Aktif : " + mahasiswa + " (tipe: " + typeof mahasiswa + ")");
+
+// let bisa di-reassign, const tidak
+umur = 23;
+console.log("Umur setelah diubah: " + umur);</textarea>
+            <div style="display:flex; gap:10px; margin-top:12px;">
+                <button class="btn-run" onclick="runCode('code-variabel','out-variabel')">
+                    <i class="fas fa-play"></i> Jalankan
+                </button>
+                <button class="btn-reset" onclick="resetOutput('out-variabel')">
+                    <i class="fas fa-eraser"></i> Hapus Output
+                </button>
+            </div>
+            <div style="margin-top:16px;">
+                <div style="font-size:11px; font-weight:700; color:var(--fg-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Output Console</div>
+                <div class="output-panel" id="out-variabel"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Operator -->
+    <section id="operator" class="section-block reveal">
+        <h3 style="font-size:24px; font-weight:800; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+            <span style="width:32px; height:32px; background:var(--accent); color:#000; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:900;">2</span>
+            Operator
+        </h3>
+        <p style="color:var(--fg-muted); line-height:1.8; margin-bottom:24px; max-width:700px;">
+            Operator digunakan untuk memanipulasi nilai dan variabel. JavaScript mendukung operator aritmatika, perbandingan, logika, penugasan, dan string concatenation.
+        </p>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:16px; margin-bottom:28px;">
+            <div style="background:var(--bg-code); border:1px solid var(--border); border-radius:10px; padding:20px;">
+                <div style="font-weight:700; color:var(--accent); margin-bottom:10px;"><i class="fas fa-plus-minus"></i> Aritmatika</div>
+                <div style="font-size:13px; color:var(--fg-muted); line-height:2;">
+                    <code>+</code> Penjumlahan &nbsp; <code>-</code> Pengurangan<br>
+                    <code>*</code> Perkalian &nbsp; <code>/</code> Pembagian<br>
+                    <code>%</code> Modulus &nbsp; <code>**</code> Pangkat<br>
+                    <code>++</code> Increment &nbsp; <code>--</code> Decrement
+                </div>
+            </div>
+            <div style="background:var(--bg-code); border:1px solid var(--border); border-radius:10px; padding:20px;">
+                <div style="font-weight:700; color:var(--accent2); margin-bottom:10px;"><i class="fas fa-equals"></i> Perbandingan</div>
+                <div style="font-size:13px; color:var(--fg-muted); line-height:2;">
+                    <code>==</code> Sama dengan (loose)<br>
+                    <code>===</code> Sama dengan (strict)<br>
+                    <code>!=</code> Tidak sama &nbsp; <code>!==</code> Strict tidak sama<br>
+                    <code>&gt;</code> <code>&lt;</code> <code>&gt;=</code> <code>&lt;=</code>
+                </div>
+            </div>
+            <div style="background:var(--bg-code); border:1px solid var(--border); border-radius:10px; padding:20px;">
+                <div style="font-weight:700; color:var(--accent3); margin-bottom:10px;"><i class="fas fa-code-merge"></i> Logika</div>
+                <div style="font-size:13px; color:var(--fg-muted); line-height:2;">
+                    <code>&&</code> AND — semua harus true<br>
+                    <code>||</code> OR — salah satu true<br>
+                    <code>!</code> NOT — membalik boolean
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-box">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px;">
+                <span style="width:10px;height:10px;border-radius:50%;background:#ef4444;"></span>
+                <span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;"></span>
+                <span style="width:10px;height:10px;border-radius:50%;background:#10b981;"></span>
+                <span style="font-size:12px; color:var(--fg-muted); margin-left:8px;">demo-operator.js</span>
+            </div>
+            <textarea class="code-editor" id="code-operator" spellcheck="false">// Operator Aritmatika
+let a = 15, b = 4;
+console.log("a + b = " + (a + b));   // 19
+console.log("a - b = " + (a - b));   // 11
+console.log("a * b = " + (a * b));   // 60
+console.log("a / b = " + (a / b));   // 3.75
+console.log("a % b = " + (a % b));   // 3
+console.log("a ** b = " + (a ** b)); // 50625
+
+// Perbandingan: == vs ===
+console.log("\n--- Perbandingan ---");
+console.log("5 == '5'  : " + (5 == '5'));   // true (loose)
+console.log("5 === '5' : " + (5 === '5'));  // false (strict)
+
+// Operator Logika
+console.log("\n--- Logika ---");
+console.log("true && false : " + (true && false)); // false
+console.log("true || false : " + (true || false)); // true
+console.log("!true         : " + (!true));         // false</textarea>
+            <div style="display:flex; gap:10px; margin-top:12px;">
+                <button class="btn-run" onclick="runCode('code-operator','out-operator')">
+                    <i class="fas fa-play"></i> Jalankan
+                </button>
+                <button class="btn-reset" onclick="resetOutput('out-operator')">
+                    <i class="fas fa-eraser"></i> Hapus Output
+                </button>
+            </div>
+            <div style="margin-top:16px;">
+                <div style="font-size:11px; font-weight:700; color:var(--fg-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Output Console</div>
+                <div class="output-panel" id="out-operator"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Alur Kontrol -->
+    <section id="kontrol" class="section-block reveal">
+        <h3 style="font-size:24px; font-weight:800; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+            <span style="width:32px; height:32px; background:var(--accent); color:#000; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:900;">3</span>
+            Alur Kontrol
+        </h3>
+        <p style="color:var(--fg-muted); line-height:1.8; margin-bottom:24px; max-width:700px;">
+            Alur kontrol menentukan urutan eksekusi kode. Dengan percabangan (<code>if/else</code>, <code>switch</code>) dan perulangan (<code>for</code>, <code>while</code>), kita bisa membuat program yang dinamis dan responsif terhadap kondisi tertentu.
+        </p>
+
+        <div class="demo-box">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px;">
+                <span style="width:10px;height:10px;border-radius:50%;background:#ef4444;"></span>
+                <span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;"></span>
+                <span style="width:10px;height:10px;border-radius:50%;background:#10b981;"></span>
+                <span style="font-size:12px; color:var(--fg-muted); margin-left:8px;">demo-kontrol.js</span>
+            </div>
+            <textarea class="code-editor" id="code-kontrol" spellcheck="false">// === Percabangan if/else ===
+let nilai = 85;
+
+if (nilai >= 90) {
+  console.log("Grade: A - Sangat Baik");
+} else if (nilai >= 80) {
+  console.log("Grade: B - Baik");
+} else if (nilai >= 70) {
+  console.log("Grade: C - Cukup");
+} else {
+  console.log("Grade: D - Perlu Perbaikan");
+}
+
+// === Switch Case ===
+let hari = "Senin";
+switch(hari) {
+  case "Senin": console.log("Hari kerja pertama"); break;
+  case "Jumat": console.log("Hari kerja terakhir"); break;
+  case "Sabtu":
+  case "Minggu": console.log("Akhir pekan!"); break;
+  default: console.log("Hari kerja biasa");
+}
+
+// === Perulangan for ===
+console.log("\n--- Loop for ---");
+for (let i = 1; i <= 5; i++) {
+  console.log("Iterasi ke-" + i);
+}
+
+// === Perulangan while ===
+console.log("\n--- Loop while ---");
+let count = 3;
+while (count > 0) {
+  console.log("Countdown: " + count);
+  count--;
+}
+console.log("Go!");</textarea>
+            <div style="display:flex; gap:10px; margin-top:12px;">
+                <button class="btn-run" onclick="runCode('code-kontrol','out-kontrol')">
+                    <i class="fas fa-play"></i> Jalankan
+                </button>
+                <button class="btn-reset" onclick="resetOutput('out-kontrol')">
+                    <i class="fas fa-eraser"></i> Hapus Output
+                </button>
+            </div>
+            <div style="margin-top:16px;">
+                <div style="font-size:11px; font-weight:700; color:var(--fg-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Output Console</div>
+                <div class="output-panel" id="out-kontrol"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Fungsi -->
+    <section id="fungsi" class="section-block reveal">
+        <h3 style="font-size:24px; font-weight:800; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+            <span style="width:32px; height:32px; background:var(--accent); color:#000; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:900;">4</span>
+            Fungsi
+        </h3>
+        <p style="color:var(--fg-muted); line-height:1.8; margin-bottom:24px; max-width:700px;">
+            Fungsi memungkinkan kita mengelompokkan kode menjadi unit yang dapat digunakan kembali. JavaScript mendukung deklarasi fungsi, ekspresi fungsi, dan arrow function (ES6+).
+        </p>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:16px; margin-bottom:28px;">
+            <div style="background:var(--bg-code); border:1px solid var(--border); border-radius:10px; padding:20px;">
+                <div style="font-weight:700; margin-bottom:8px; color:var(--accent);">Deklarasi Fungsi</div>
+                <pre style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#c9d1d9; line-height:1.6;"><code>function sapa(nama) {
+  return "Halo, " + nama;
+}</code></pre>
+            </div>
+            <div style="background:var(--bg-code); border:1px solid var(--border); border-radius:10px; padding:20px;">
+                <div style="font-weight:700; margin-bottom:8px; color:var(--accent2);">Ekspresi Fungsi</div>
+                <pre style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#c9d1d9; line-height:1.6;"><code>const sapa = function(nama) {
+  return "Halo, " + nama;
+}</code></pre>
+            </div>
+            <div style="background:var(--bg-code); border:1px solid var(--border); border-radius:10px; padding:20px;">
+                <div style="font-weight:700; margin-bottom:8px; color:var(--accent3);">Arrow Function</div>
+                <pre style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#c9d1d9; line-height:1.6;"><code>const sapa = (nama) => {
+  return "Halo, " + nama;
+}
+// Singkat:
+const sapa2 = nama => "Halo, "+nama;</code></pre>
+            </div>
+        </div>
+
+        <div class="demo-box">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px;">
+                <span style="width:10px;height:10px;border-radius:50%;background:#ef4444;"></span>
+                <span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;"></span>
+                <span style="width:10px;height:10px;border-radius:50%;background:#10b981;"></span>
+                <span style="font-size:12px; color:var(--fg-muted); margin-left:8px;">demo-fungsi.js</span>
+            </div>
+            <textarea class="code-editor" id="code-fungsi" spellcheck="false">// Deklarasi Fungsi
+function hitungLuas(p, l) {
+  return p * l;
+}
+console.log("Luas tanah: " + hitungLuas(10, 5));
+
+// Arrow Function
+const hitungKeliling = (p, l) => 2 * (p + l);
+console.log("Keliling: " + hitungKeliling(10, 5));
+
+// Fungsi dengan default parameter
+const perkenalan = (nama, prodi = "Informatika") => {
+  return "Halo, saya " + nama + " dari " + prodi;
+};
+console.log(perkenalan("Rina"));
+console.log(perkenalan("Andi", "Sistem Informasi"));
+
+// Callback function
+const angka = [5, 12, 8, 130, 44];
+const besar = angka.filter(n => n > 10);
+console.log("Angka > 10: " + besar.join(", "));</textarea>
+            <div style="display:flex; gap:10px; margin-top:12px;">
+                <button class="btn-run" onclick="runCode('code-fungsi','out-fungsi')">
+                    <i class="fas fa-play"></i> Jalankan
+                </button>
+                <button class="btn-reset" onclick="resetOutput('out-fungsi')">
+                    <i class="fas fa-eraser"></i> Hapus Output
+                </button>
+            </div>
+            <div style="margin-top:16px;">
+                <div style="font-size:11px; font-weight:700; color:var(--fg-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Output Console</div>
+                <div class="output-panel" id="out-fungsi"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Array & Objek -->
+    <section id="array-objek" class="section-block reveal">
+        <h3 style="font-size:24px; font-weight:800; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+            <span style="width:32px; height:32px; background:var(--accent); color:#000; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:900;">5</span>
+            Array & Objek
+        </h3>
+        <p style="color:var(--fg-muted); line-height:1.8; margin-bottom:24px; max-width:700px;">
+            Array menyimpan kumpulan data berurutan, sedangkan Objek menyimpan data dalam pasangan key-value. Keduanya adalah tipe data reference yang paling sering digunakan.
+        </p>
+
+        <div class="demo-box">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px;">
+                <span style="width:10px;height:10px;border-radius:50%;background:#ef4444;"></span>
+                <span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;"></span>
+                <span style="width:10px;height:10px;border-radius:50%;background:#10b981;"></span>
+                <span style="font-size:12px; color:var(--fg-muted); margin-left:8px;">demo-array-objek.js</span>
+            </div>
+            <textarea class="code-editor" id="code-array" spellcheck="false">// === Array ===
+const buah = ["Apel", "Mangga", "Jeruk", "Durian"];
+console.log("Buah: " + buah.join(", "));
+console.log("Jumlah: " + buah.length);
+console.log("Buah pertama: " + buah[0]);
+console.log("Buah terakhir: " + buah[buah.length - 1]);
+
+// Metode Array
+buah.push("Pisang");      // Tambah di akhir
+buah.pop();               // Hapus di akhir
+buah.unshift("Semangka"); // Tambah di awal
+console.log("Setelah push/pop/unshift: " + buah.join(", "));
+
+// Array map & forEach
+const harga = [5000, 12000, 8000];
+const hargaFormat = harga.map(h => "Rp" + h.toLocaleString());
+console.log("Harga: " + hargaFormat.join(", "));
+
+// === Objek ===
+const mhs = {
+  nama: "Siti Aminah",
+  nim: "2024001",
+  prodi: "Informatika",
+  ipk: 3.75,
+  aktif: true
+};
+console.log("\n--- Objek ---");
+console.log("Nama : " + mhs.nama);
+console.log("NIM  : " + mhs.nim);
+console.log("IPK  : " + mhs["ipk"]);
+
+// Destructuring
+const { nama, prodi, ipk } = mhs;
+console.log(`Destructuring: ${nama}, ${prodi}, IPK=${ipk}`);
+
+// Object.keys & Object.values
+console.log("Keys  : " + Object.keys(mhs).join(", "));
+console.log("Values: " + Object.values(mhs).join(", "));</textarea>
+            <div style="display:flex; gap:10px; margin-top:12px;">
+                <button class="btn-run" onclick="runCode('code-array','out-array')">
+                    <i class="fas fa-play"></i> Jalankan
+                </button>
+                <button class="btn-reset" onclick="resetOutput('out-array')">
+                    <i class="fas fa-eraser"></i> Hapus Output
+                </button>
+            </div>
+            <div style="margin-top:16px;">
+                <div style="font-size:11px; font-weight:700; color:var(--fg-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Output Console</div>
+                <div class="output-panel" id="out-array"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ BAGIAN 2: MANIPULASI DOM ============ -->
+    <div style="padding:8px 48px; margin-top:20px;">
+        <div class="tag" style="background:rgba(16,185,129,0.12); color:var(--accent2);">
+            <i class="fas fa-sitemap"></i> Bagian 2
+        </div>
+        <h2 style="font-size:36px; font-weight:900; margin-top:8px;">Manipulasi DOM</h2>
+        <p style="color:var(--fg-muted); margin-top:8px; max-width:600px; line-height:1.7;">Document Object Model (DOM) adalah antarmuka pemrograman untuk HTML. Dengan JavaScript, kita bisa memilih, mengubah, membuat, dan menghapus elemen HTML secara dinamis.</p>
+    </div>
+
+    <!-- Memilih Elemen -->
+    <section id="dom-select" class="section-block reveal">
+        <h3 style="font-size:24px; font-weight:800; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+            <span style="width:32px; height:32px; background:var(--accent2); color:#000; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:900;">6</span>
+            Memilih Elemen DOM
+        </h3>
+        <p style="color:var(--fg-muted); line-height:1.8; margin-bottom:24px; max-width:700px;">
+            Sebelum memanipulasi elemen, kita harus memilihnya terlebih dahulu. JavaScript menyediakan beberapa metode selection yang berbeda.
+        </p>
+
+        <div style="overflow-x:auto; margin-bottom:28px;">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Metode</th>
+                        <th>Hasil</th>
+                        <th>Contoh</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>getElementById()</code></td><td>1 elemen</td><td>document.getElementById("header")</td></tr>
+                    <tr><td><code>getElementsByClassName()</code></td><td>HTMLCollection</td><td>document.getElementsByClassName("card")</td></tr>
+                    <tr><td><code>getElementsByTagName()</code></td><td>HTMLCollection</td><td>document.getElementsByTagName("p")</td></tr>
+                    <tr><td><code>querySelector()</code></td><td>1 elemen (pertama)</td><td>document.querySelector(".card")</td></tr>
+                    <tr><td><code>querySelectorAll()</code></td><td>NodeList</td><td>document.querySelectorAll("li.item")</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Demo Interaktif Pemilihan DOM -->
+        <div class="demo-box">
+            <div style="font-weight:700; margin-bottom:16px; color:var(--accent2);">
+                <i class="fas fa-flask"></i> Demo Interaktif: Pilih Elemen
+            </div>
+            <div id="dom-select-demo" style="background:#111318; border:2px dashed var(--border); border-radius:12px; padding:24px; margin-bottom:16px;">
+                <h4 id="demo-title" style="font-size:20px; font-weight:700; margin-bottom:8px;">Judul Demo</h4>
+                <p class="demo-text" style="color:var(--fg-muted); margin-bottom:12px;">Paragraf pertama dengan class demo-text.</p>
+                <p class="demo-text" style="color:var(--fg-muted); margin-bottom:12px;">Paragraf kedua juga dengan class demo-text.</p>
+                <ul>
+                    <li class="demo-item" style="color:var(--fg-muted); padding:4px 0;">Item list 1</li>
+                    <li class="demo-item" style="color:var(--fg-muted); padding:4px 0;">Item list 2</li>
+                    <li class="demo-item" style="color:var(--fg-muted); padding:4px 0;">Item list 3</li>
+                </ul>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="btn-run" onclick="selectDemo('getElementById')" style="font-size:12px; padding:8px 16px;">
+                    getElementById
+                </button>
+                <button class="btn-run" onclick="selectDemo('getElementsByClassName')" style="font-size:12px; padding:8px 16px; background:var(--accent2);">
+                    getElementsByClassName
+                </button>
+                <button class="btn-run" onclick="selectDemo('querySelector')" style="font-size:12px; padding:8px 16px; background:var(--accent3);">
+                    querySelector
+                </button>
+                <button class="btn-run" onclick="selectDemo('querySelectorAll')" style="font-size:12px; padding:8px 16px; background:#8b5cf6;">
+                    querySelectorAll
+                </button>
+                <button class="btn-reset" onclick="resetSelectDemo()">
+                    <i class="fas fa-undo"></i> Reset
+                </button>
+            </div>
+            <div class="output-panel" id="out-dom-select" style="margin-top:16px; min-height:40px; font-size:12px;"></div>
+        </div>
+    </section>
+
+    <!-- Mengubah Konten -->
+    <section id="dom-modify" class="section-block reveal">
+        <h3 style="font-size:24px; font-weight:800; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+            <span style="width:32px; height:32px; background:var(--accent2); color:#000; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:900;">7</span>
+            Mengubah Konten Elemen
+        </h3>
+        <p style="color:var(--fg-muted); line-height:1.8; margin-bottom:24px; max-width:700px;">
+            Setelah elemen dipilih, kita bisa mengubah isinya menggunakan properti <code>textContent</code>, <code>innerHTML</code>, dan <code>value</code> (untuk input).
+        </p>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(250px,1fr)); gap:16px; margin-bottom:28px;">
+            <div style="background:var(--bg-code); border:1px solid var(--border); border-radius:10px; padding:20px;">
+                <div style="font-weight:700; color:var(--accent); margin-bottom:6px;">textContent</div>
+                <div style="font-size:12px; color:var(--fg-muted); line-height:1.6;">Mengubah teks murni. Aman dari XSS. Tag HTML tidak di-render.</div>
+            </div>
+            <div style="background:var(--bg-code); border:1px solid var(--border); border-radius:10px; padding:20px;">
+                <div style="font-weight:700; color:var(--accent2); margin-bottom:6px;">innerHTML</div>
+                <div style="font-size:12px; color:var(--fg-muted); line-height:1.6;">Mengubah HTML termasuk tag. Tag akan di-render. Hati-hati XSS!</div>
+            </div>
+            <div style="background:var(--bg-code); border:1px solid var(--border); border-radius:10px; padding:20px;">
+                <div style="font-weight:700; color:var(--accent3); margin-bottom:6px;">value</div>
+                <div style="font-size:12px; color:var(--fg-muted); line-height:1.6;">Membaca/mengubah nilai input form (text, select, dll).</div>
+            </div>
+        </div>
+
+        <div class="demo-box">
+            <div style="font-weight:700; margin-bottom:16px; color:var(--accent2);">
+                <i class="fas fa-flask"></i> Demo Interaktif: Ubah Konten
+            </div>
+            <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:16px;">
+                <div style="flex:1; min-width:200px;">
+                    <label style="font-size:12px; font-weight:600; color:var(--fg-muted); display:block; margin-bottom:6px;">Ketik sesuatu:</label>
+                    <input type="text" id="modifyInput" value="Halo, Dunia!" style="width:100%; padding:10px 14px; background:var(--bg-code); border:1px solid var(--border); border-radius:8px; color:var(--fg); font-family:inherit; font-size:14px; outline:none;" placeholder="Ketik di sini...">
+                </div>
+                <div style="display:flex; align-items:flex-end; gap:8px;">
+                    <button class="btn-run" onclick="modifyContent('textContent')" style="font-size:12px; padding:10px 16px;">textContent</button>
+                    <button class="btn-run" onclick="modifyContent('innerHTML')" style="font-size:12px; padding:10px 16px; background:var(--accent2);">innerHTML</button>
+                </div>
+            </div>
+            <div id="dom-modify-target" style="background:#111318; border:2px dashed var(--border); border-radius:12px; padding:24px; min-height:80px; transition:all 0.3s;">
+                <span style="font-size:18px; font-weight:700;">Teks ini akan berubah</span>
+            </div>
+            <div class="output-panel" id="out-dom-modify" style="margin-top:16px; min-height:30px; font-size:12px;"></div>
+        </div>
+    </section>
+
+    <!-- Mengubah Style -->
+    <section id="dom-style" class="section-block reveal">
+        <h3 style="font-size:24px; font-weight:800; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+            <span style="width:32px; height:32px; background:var(--accent2); color:#000; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:900;">8</span>
+            Mengubah Style & Class
+        </h3>
+        <p style="color:var(--fg-muted); line-height:1.8; margin-bottom:24px; max-width:700px;">
+            JavaScript bisa mengubah tampilan elemen melalui properti <code>style</code> (inline style) atau manipulasi <code>classList</code> (tambah/hapus/toggle class CSS).
+        </p>
+
+        <div class="demo-box">
+            <div style="font-weight:700; margin-bottom:16px; color:var(--accent2);">
+                <i class="fas fa-flask"></i> Demo Interaktif: Style & Class
+            </div>
+            <div style="display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start;">
+                <div>
+                    <div id="style-target" style="width:160px; height:160px; background:var(--bg-code); border:3px solid var(--border); border-radius:16px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; transition:all 0.4s cubic-bezier(0.4,0,0.2,1); cursor:pointer; text-align:center; padding:16px;">
+                        Target Elemen
+                    </div>
+                </div>
+                <div style="flex:1; min-width:200px;">
+                    <div style="font-size:12px; font-weight:700; color:var(--fg-muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:1px;">Inline Style</div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+                        <label style="font-size:12px; color:var(--fg-muted);">Warna:</label>
+                        <input type="color" id="styleColor" value="#f59e0b" onchange="applyInlineStyle()" style="width:32px; height:28px; border:none; cursor:pointer; background:transparent;">
+                        <label style="font-size:12px; color:var(--fg-muted);">Ukuran:</label>
+                        <input type="range" id="styleSize" min="12" max="36" value="15" onchange="applyInlineStyle()" style="width:100px; accent-color:var(--accent);">
+                        <label style="font-size:12px; color:var(--fg-muted);">Radius:</label>
+                        <input type="range" id="styleRadius" min="0" max="80" value="16" onchange="applyInlineStyle()" style="width:100px; accent-color:var(--accent);">
+                    </div>
+
+                    <div style="font-size:12px; font-weight:700; color:var(--fg-muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:1px;">ClassList</div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="btn-run" onclick="toggleClass('shadow-glow')" style="font-size:11px; padding:8px 14px; background:var(--accent2);">Toggle Glow</button>
+                        <button class="btn-run" onclick="toggleClass('rotate-me')" style="font-size:11px; padding:8px 14px; background:#8b5cf6;">Toggle Rotate</button>
+                        <button class="btn-run" onclick="toggleClass('scale-up')" style="font-size:11px; padding:8px 14px; background:var(--accent3);">Toggle Scale</button>
+                        <button class="btn-reset" onclick="resetStyleDemo()">
+                            <i class="fas fa-undo"></i> Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <style>
+            .shadow-glow { box-shadow: 0 0 30px rgba(245,158,11,0.5), 0 0 60px rgba(245,158,11,0.2) !important; }
+            .rotate-me { transform: rotate(45deg) !important; }
+            .scale-up { transform: scale(1.3) !important; }
+        </style>
+    </section>
+
+    <!-- Membuat & Menghapus Elemen -->
+    <section id="dom-create" class="section-block reveal">
+        <h3 style="font-size:24px; font-weight:800; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+            <span style="width:32px; height:32px; background:var(--accent2); color:#000; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:900;">9</span>
+            Membuat & Menghapus Elemen
+        </h3>
+        <p style="color:var(--fg-muted); line-height:1.8; margin-bottom:24px; max-width:700px;">
+            Kita bisa membuat elemen baru dengan <code>createElement()</code>, menambahkannya ke DOM dengan <code>appendChild()</code>/<code>insertBefore()</code>, dan menghapusnya dengan <code>remove()</code>/<code>removeChild()</code>.
+        </p>
+
+        <div class="demo-box">
+            <div style="font-weight:700; margin-bottom:16px; color:var(--accent2);">
+                <i class="fas fa-flask"></i> Demo Interaktif: CRUD Elemen
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+                <input type="text" id="createElementInput" placeholder="Nama item baru..." style="padding:8px 14px; background:var(--bg-code); border:1px solid var(--border); border-radius:8px; color:var(--fg); font-family:inherit; font-size:14px; outline:none; width:200px;">
+                <button class="btn-run" onclick="createDOMElement()" style="font-size:12px; padding:8px 16px;">
+                    <i class="fas fa-plus"></i> Tambah
+                </button>
+                <button class="btn-reset" onclick="clearDOMElements()">
+                    <i class="fas fa-trash"></i> Hapus Semua
+                </button>
+            </div>
+            <div id="dom-create-area" style="background:#111318; border:2px dashed var(--border); border-radius:12px; padding:20px; min-height:80px; display:flex; flex-wrap:wrap; gap:10px;">
+                <div style="font-size:13px; color:var(--fg-muted); align-self:center;" id="empty-message">Belum ada item. Ketik dan klik "Tambah".</div>
+            </div>
+            <div class="output-panel" id="out-dom-create" style="margin-top:16px; min-height:30px; font-size:12px;"></div>
+        </div>
+    </section>
+
+    <!-- ============ BAGIAN 3: EVENT HANDLING ============ -->
+    <div style="padding:8px 48px; margin-top:20px;">
+        <div class="tag" style="background:rgba(239,68,68,0.12); color:var(--accent3);">
+            <i class="fas fa-bolt"></i> Bagian 3
+        </div>
+        <h2 style="font-size:36px; font-weight:900; margin-top:8px;">Event Handling</h2>
+        <p style="color:var(--fg-muted); margin-top:8px; max-width:600px; line-height:1.7;">Event adalah aksi yang terjadi di halaman web — klik, ketik, hover, dan lainnya. Dengan event handler, kita membuat halaman merespons interaksi pengguna.</p>
+    </div>
+
+    <!-- Event Dasar -->
+    <section id="event-basic" class="section-block reveal">
+        <h3 style="font-size:24px; font-weight:800; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+            <span style="width:32px; height:32px; background:var(--accent3); color:#fff; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:900;">10</span>
+            Event Dasar
+        </h3>
+        <p style="color:var(--fg-muted); line-height:1.8; margin-bottom:24px; max-width:700px;">
+            Ada tiga cara mendaftarkan event handler: inline attribute, properti DOM, dan <code>addEventListener()</code> (yang paling direkomendasikan).
+        </p>
+
+        <div style="overflow-x:auto; margin-bottom:28px;">
+            <table class="data-table">
+                <thead>
+                    <tr><th>Cara</th><th>Sintaks</th><th>Kelebihan / Kekurangan</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>inline</code></td>
+                        <td style="font-size:12px;">&lt;button onclick="fn()"&gt;</td>
+                        <td style="font-size:12px;">Simpel tapi mencampur HTML & JS</td>
+                    </tr>
+                    <tr>
+                        <td><code>DOM property</code></td>
+                        <td style="font-size:12px;">btn.onclick = fn</td>
+                        <td style="font-size:12px;">Hanya 1 handler per event</td>
+                    </tr>
+                    <tr>
+                        <td><code>addEventListener</code></td>
+                        <td style="font-size:12px;">btn.addEventListener("click", fn)</td>
+                        <td style="font-size:12px; color:var(--accent2);">Bisa banyak handler, bisa di-remove</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Demo Event Box -->
+        <div class="demo-box">
+            <div style="font-weight:700; margin-bottom:20px; color:var(--accent3);">
+                <i class="fas fa-flask"></i> Demo Interaktif: Event Box
+            </div>
+            <p style="font-size:13px; color:var(--fg-muted); margin-bottom:16px;">Coba interaksi dengan kotak-kotak di bawah ini dan perhatikan event yang terpicu:</p>
+            <div style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center; margin-bottom:20px;">
+                <div class="event-target" id="event-click" style="background:rgba(239,68,68,0.2); border:2px solid var(--accent3); color:var(--accent3);">
+                    CLICK
+                </div>
+                <div class="event-target" id="event-hover" style="background:rgba(245,158,11,0.2); border:2px solid var(--accent); color:var(--accent);">
+                    HOVER
+                </div>
+                <div class="event-target" id="event-dblclick" style="background:rgba(16,185,129,0.2); border:2px solid var(--accent2); color:var(--accent2);">
+                    DOUBLE CLICK
+                </div>
+                <div class="event-target" id="event-context" style="background:rgba(139,92,246,0.2); border:2px solid #8b5cf6; color:#8b5cf6;">
+                    RIGHT CLICK
+                </div>
+            </div>
+
+            <div style="font-weight:600; margin-bottom:10px; font-size:13px;">Event Log:</div>
+            <div id="event-log" style="background:#111318; border:1px solid var(--border); border-radius:10px; padding:14px; font-family:'JetBrains Mono',monospace; font-size:12px; max-height:160px; overflow-y:auto; line-height:1.8; color:var(--fg-muted);">
+                <span style="color:var(--fg-muted); font-style:italic;">Belum ada event. Coba klik, hover, atau double-click kotak di atas.</span>
+            </div>
+            <button class="btn-reset" onclick="clearEventLog()" style="margin-top:10px; font-size:12px; padding:8px 14px;">
+                <i class="fas fa-eraser"></i> Hapus Log
+            </button>
+        </div>
+    </section>
+
+    <!-- Event Object -->
+    <section id="event-object" class="section-block reveal">
+        <h3 style="font-size:24px; font-weight:800; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+            <span style="width:32px; height:32px; background:var(--accent3); color:#fff; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:900;">11</span>
+            Event Object
+        </h3>
+        <p style="color:var(--fg-muted); line-height:1.8; margin-bottom:24px; max-width:700px;">
+            Setiap event handler menerima sebuah <strong>Event Object</strong> yang berisi informasi detail tentang event yang terjadi: tipe event, elemen target, posisi kursor, tombol keyboard yang ditekan, dan lainnya.
+        </p>
+
+        <div class="demo-box">
+            <div style="font-weight:700; margin-bottom:16px; color:var(--accent3);">
+                <i class="fas fa-flask"></i> Demo Interaktif: Mouse Tracker (Event Object)
+            </h3>
+            <p style="font-size:13px; color:var(--fg-muted); margin-bottom:16px;">Gerakkan mouse di area tracking di bawah untuk melihat properti Event Object secara real-time:</p>
+            <div id="mouse-tracker" style="background:#111318; border:2px solid var(--border); border-radius:12px; height:220px; position:relative; cursor:crosshair; overflow:hidden; transition:border-color 0.3s;">
+                <div id="mouse-dot" style="width:20px; height:20px; background:var(--accent3); border-radius:50%; position:absolute; transform:translate(-50%,-50%); pointer-events:none; box-shadow:0 0 15px rgba(239,68,68,0.5); transition: left 0.05s, top 0.05s;"></div>
+                <div id="mouse-info" style="position:absolute; top:12px; left:12px; font-family:'JetBrains Mono',monospace; font-size:11px; line-height:1.8; color:var(--fg-muted); pointer-events:none;"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Teknik Lanjutan -->
+    <section id="event-adv" class="section-block reveal">
+        <h3 style="font-size:24px; font-weight:800; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+            <span style="width:32px; height:32px; background:var(--accent3); color:#fff; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:900;">12</span>
+            Teknik Lanjutan
+        </h3>
+        <p style="color:var(--fg-muted); line-height:1.8; margin-bottom:24px; max-width:700px;">
+            Konsep lanjutan yang penting: <strong>Event Bubbling</strong> (event naik dari child ke parent), <strong>Event Delegation</strong> (menangkap event di parent untuk child dinamis), dan <code>preventDefault()</code> (mencegah aksi default browser).
+        </p>
+
+        <!-- Demo Bubbling -->
+        <div class="demo-box" style="margin-bottom:24px;">
+            <div style="font-weight:700; margin-bottom:16px; color:var(--accent3);">
+                <i class="fas fa-arrow-up"></i> Demo: Event Bubbling
+            </div>
+            <p style="font-size:13px; color:var(--fg-muted); margin-bottom:16px;">Klik tombol di dalam dan perhatikan bagaimana event "menggelembung" (bubble) ke atas:</p>
+            <div id="bubble-grandparent" style="background:rgba(239,68,68,0.08); border:2px solid rgba(239,68,68,0.3); border-radius:16px; padding:32px; cursor:pointer; transition:all 0.2s;">
+                <div style="font-size:12px; font-weight:700; color:var(--accent3); margin-bottom:12px;">Grandparent (div#bubble-grandparent)</div>
+                <div id="bubble-parent" style="background:rgba(245,158,11,0.08); border:2px solid rgba(245,158,11,0.3); border-radius:12px; padding:24px; cursor:pointer; transition:all 0.2s;">
+                    <div style="font-size:12px; font-weight:700; color:var(--accent); margin-bottom:12px;">Parent (div#bubble-parent)</div>
+                    <div id="bubble-child" style="background:rgba(16,185,129,0.08); border:2px solid rgba(16,185,129,0.3); border-radius:8px; padding:16px; cursor:pointer; transition:all 0.2s;">
+                        <div style="font-size:12px; font-weight:700; color:var(--accent2);">Child (div#bubble-child) — Klik saya!</div>
+                    </div>
+                </div>
+            </div>
+            <div id="bubble-log" style="background:#111318; border:1px solid var(--border); border-radius:10px; padding:14px; font-family:'JetBrains Mono',monospace; font-size:12px; margin-top:12px; max-height:120px; overflow-y:auto; line-height:1.8; color:var(--fg-muted);">
+                <span style="font-style:italic;">Klik elemen di atas untuk melihat bubbling...</span>
+            </div>
+            <button class="btn-reset" onclick="document.getElementById('bubble-log').innerHTML='<span style=\'font-style:italic;\'>Klik elemen di atas untuk melihat bubbling...</span>'" style="margin-top:8px; font-size:12px; padding:6px 12px;">
+                <i class="fas fa-eraser"></i> Hapus Log
+            </button>
+        </div>
+
+        <!-- Demo Delegation -->
+        <div class="demo-box">
+            <div style="font-weight:700; margin-bottom:16px; color:#8b5cf6;">
+                <i class="fas fa-bullseye"></i> Demo: Event Delegation
+            </div>
+            <p style="font-size:13px; color:var(--fg-muted); margin-bottom:16px;">Satu event listener di parent bisa menangani klik pada semua child — termasuk child yang ditambahkan secara dinamis:</p>
+            <div style="display:flex; gap:8px; margin-bottom:12px;">
+                <input type="text" id="delegation-input" placeholder="Nama item baru..." style="padding:8px 14px; background:var(--bg-code); border:1px solid var(--border); border-radius:8px; color:var(--fg); font-family:inherit; font-size:13px; outline:none; width:180px;">
+                <button class="btn-run" onclick="addDelegationItem()" style="font-size:12px; padding:8px 14px; background:#8b5cf6;">
+                    <i class="fas fa-plus"></i> Tambah Item
+                </button>
+            </div>
+            <ul id="delegation-list" style="list-style:none; background:#111318; border:1px solid var(--border); border-radius:10px; padding:8px; min-height:60px;">
+                <li data-id="1" style="padding:10px 14px; border-radius:6px; cursor:pointer; transition:all 0.2s; font-size:14px;">Item 1 — klik untuk hapus</li>
+                <li data-id="2" style="padding:10px 14px; border-radius:6px; cursor:pointer; transition:all 0.2s; font-size:14px;">Item 2 — klik untuk hapus</li>
+                <li data-id="3" style="padding:10px 14px; border-radius:6px; cursor:pointer; transition:all 0.2s; font-size:14px;">Item 3 — klik untuk hapus</li>
+            </ul>
+            <div class="output-panel" id="out-delegation" style="margin-top:12px; min-height:30px; font-size:12px;"></div>
+        </div>
+    </section>
+
+    <!-- ============ LIVE EDITOR ============ -->
+    <section id="live-editor" class="section-block reveal" style="background:linear-gradient(180deg, var(--bg) 0%, #111318 100%);">
+        <div style="text-align:center; margin-bottom:32px;">
+            <div class="tag" style="background:rgba(245,158,11,0.12); color:var(--accent);">
+                <i class="fas fa-terminal"></i> Sandbox
+            </div>
+            <h2 style="font-size:28px; font-weight:900; margin-top:8px;">Live Code Editor</h2>
+            <p style="color:var(--fg-muted); margin-top:4px;">Tulis kode JavaScript apa saja dan jalankan secara real-time</p>
+        </div>
+
+        <div class="demo-box" style="max-width:900px; margin:0 auto;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="width:10px;height:10px;border-radius:50%;background:#ef4444;"></span>
+                    <span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;"></span>
+                    <span style="width:10px;height:10px;border-radius:50%;background:#10b981;"></span>
+                    <span style="font-size:12px; color:var(--fg-muted); margin-left:8px;">sandbox.js</span>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn-run" onclick="runCode('live-code-editor','live-output')" id="runBtn">
+                        <i class="fas fa-play"></i> Jalankan
+                    </button>
+                    <button class="btn-reset" onclick="resetOutput('live-output')">
+                        <i class="fas fa-eraser"></i> Hapus
+                    </button>
+                </div>
+            </div>
+            <textarea class="code-editor" id="live-code-editor" style="min-height:200px; font-size:14px;" spellcheck="false">// ====================================
+//   SANDBOX — Tulis kode JavaScript di sini!
+// ====================================
+
+// Contoh: Buat pola segitiga bintang
+let tinggi = 6;
+for (let baris = 1; baris <= tinggi; baris++) {
+  let bintang = "";
+  for (let kolom = 1; kolom <= baris; kolom++) {
+    bintang += "* ";
+  }
+  console.log(bintang.trim());
+}
+
+// Contoh: Fungsi fibonacci
+function fibonacci(n) {
+  let fib = [0, 1];
+  for (let i = 2; i < n; i++) {
+    fib.push(fib[i-1] + fib[i-2]);
+  }
+  return fib;
+}
+console.log("\nFibonacci (10): " + fibonacci(10).join(", "));
+
+// Contoh: Manipulasi string
+let kalimat = "JavaScript Itu Menyenangkan";
+let kata = kalimat.split(" ");
+console.log("\nKata-kata: " + JSON.stringify(kata));
+console.log("Dibalik: " + kata.reverse().join(" "));</textarea>
+            <div style="margin-top:16px;">
+                <div style="font-size:11px; font-weight:700; color:var(--fg-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                    <i class="fas fa-terminal" style="color:var(--accent2);"></i> Output Console
+                </div>
+                <div class="output-panel" id="live-output" style="min-height:80px;"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer style="padding:40px 48px; border-top:1px solid var(--border); text-align:center;">
+        <p style="font-size:13px; color:var(--fg-muted);">
+            Materi Interaktif — Dasar JavaScript, Manipulasi DOM & Event Handling
+        </p>
+        <p style="font-size:11px; color:var(--border); margin-top:6px;">
+            Dibuat untuk keperluan perkuliahan. Gunakan editor live untuk eksperimen.
+        </p>
+    </footer>
+</main>
+
+<script>
+    // ============================================
+    //  SISTEM NAVIGASI & UI
+    // ============================================
+
+    // Progress bar saat scroll
+    window.addEventListener('scroll', () => {
+        const scrollTop = document.documentElement.scrollTop;
+        const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = (scrollTop / scrollHeight) * 100;
+        document.getElementById('progressBar').style.width = progress + '%';
+    });
+
+    // Hamburger menu toggle
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+
+    hamburgerBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('mobile-open');
+    });
+
+    // Tutup sidebar saat klik link (mobile)
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+        link.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('mobile-open');
+            }
+        });
+    });
+
+    // Active sidebar link berdasarkan scroll
+    const sections = document.querySelectorAll('section[id]');
+    const sidebarLinks = document.querySelectorAll('.sidebar-link');
+
+    function updateActiveLink() {
+        let current = '';
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop - 120;
+            if (window.scrollY >= sectionTop) {
+                current = section.getAttribute('id');
+            }
+        });
+        sidebarLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('data-section') === current) {
+                link.classList.add('active');
+            }
+        });
+    }
+    window.addEventListener('scroll', updateActiveLink);
+
+    // Intersection Observer untuk reveal animation
+    const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+            }
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+    // ============================================
+    //  SISTEM MENJALANKAN KODE
+    // ============================================
+
+    function runCode(editorId, outputId) {
+        const code = document.getElementById(editorId).value;
+        const outputEl = document.getElementById(outputId);
+        outputEl.textContent = '';
+
+        // Override console.log untuk menangkap output
+        const originalLog = console.log;
+        const logs = [];
+        console.log = function(...args) {
+            const text = args.map(a => {
+                if (typeof a === 'object') return JSON.stringify(a, null, 2);
+                return String(a);
+            }).join(' ');
+            logs.push(text);
+            originalLog.apply(console, args);
+        };
+
+        try {
+            // Gunakan Function constructor agar kode berjalan dalam scope terbatas
+            const fn = new Function(code);
+            fn();
+            outputEl.textContent = logs.join('\n') || '(Tidak ada output console.log)';
+            outputEl.style.color = 'var(--accent2)';
+            showToast('Kode berhasil dijalankan!', 'success');
+        } catch (err) {
+            outputEl.textContent = 'Error: ' + err.message;
+            outputEl.style.color = 'var(--accent3)';
+            showToast('Error: ' + err.message, 'error');
+        }
+
+        // Kembalikan console.log asli
+        console.log = originalLog;
+    }
+
+    function resetOutput(outputId) {
+        const el = document.getElementById(outputId);
+        el.textContent = '';
+        el.style.color = 'var(--accent2)';
+    }
+
+    // ============================================
+    //  TOAST NOTIFICATION
+    // ============================================
+
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = 'toast ' + type;
+        const icons = { success: 'fas fa-check-circle', error: 'fas fa-exclamation-circle', info: 'fas fa-info-circle' };
+        toast.innerHTML = '<i class="' + icons[type] + '"></i> ' + message;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100%)';
+            toast.style.transition = 'all 0.3s';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // ============================================
+    //  DEMO: DOM SELECTION
+    // ============================================
+
+    function selectDemo(method) {
+        const outputEl = document.getElementById('out-dom-select');
+        const demoArea = document.getElementById('dom-select-demo');
+
+        // Reset highlight
+        demoArea.querySelectorAll('*').forEach(el => {
+            el.style.outline = 'none';
+            el.style.background = '';
+        });
+
+        let result = '';
+        let elements = [];
+
+        switch(method) {
+            case 'getElementById':
+                const el = document.getElementById('demo-title');
+                el.style.outline = '3px solid var(--accent)';
+                el.style.outlineOffset = '4px';
+                result = 'getElementById("demo-title") →\n  ' + el.tagName + ': "' + el.textContent + '"';
+                elements = [el];
+                break;
+            case 'getElementsByClassName':
+                const cols = document.getElementsByClassName('demo-text');
+                for (let i = 0; i < cols.length; i++) {
+                    cols[i].style.outline = '3px solid var(--accent2)';
+                    cols[i].style.outlineOffset = '2px';
+                    cols[i].style.background = 'rgba(16,185,129,0.1)';
+                    elements.push(cols[i]);
+                }
+                result = 'getElementsByClassName("demo-text") →\n  Ditemukan: ' + cols.length + ' elemen';
+                break;
+            case 'querySelector':
+                const first = document.querySelector('.demo-item');
+                first.style.outline = '3px solid var(--accent3)';
+                first.style.outlineOffset = '2px';
+                first.style.background = 'rgba(239,68,68,0.1)';
+                result = 'querySelector(".demo-item") →\n  Elemen pertama: "' + first.textContent + '"';
+                break;
+            case 'querySelectorAll':
+                const all = document.querySelectorAll('.demo-item');
+                all.forEach((item, i) => {
+                    item.style.outline = '3px solid #8b5cf6';
+                    item.style.outlineOffset = '2px';
+                    item.style.background = 'rgba(139,92,246,0.1)';
+                });
+                result = 'querySelectorAll(".demo-item") →\n  Ditemukan: ' + all.length + ' elemen';
+                break;
+        }
+
+        outputEl.textContent = result;
+        outputEl.style.color = 'var(--fg)';
+
+        // Flash demo area
+        demoArea.style.borderColor = 'var(--accent)';
+        demoArea.style.boxShadow = '0 0 20px rgba(245,158,11,0.15)';
+        setTimeout(() => {
+            demoArea.style.borderColor = 'var(--border)';
+            demoArea.style.boxShadow = 'none';
+        }, 800);
+    }
+
+    function resetSelectDemo() {
+        const demoArea = document.getElementById('dom-select-demo');
+        demoArea.querySelectorAll('*').forEach(el => {
+            el.style.outline = 'none';
+            el.style.background = '';
+            el.style.outlineOffset = '';
+        });
+        document.getElementById('out-dom-select').textContent = '';
+    }
+
+    // ============================================
+    //  DEMO: DOM MODIFY CONTENT
+    // ============================================
+
+    function modifyContent(method) {
+        const input = document.getElementById('modifyInput').value;
+        const target = document.getElementById('dom-modify-target');
+        const outputEl = document.getElementById('out-dom-modify');
+
+        if (method === 'textContent') {
+            target.textContent = input;
+            outputEl.textContent = 'textContent diubah ke: "' + input + '"\n(HTML tag tidak di-render, aman dari XSS)';
+        } else {
+            target.innerHTML = input;
+            outputEl.textContent = 'innerHTML diubah ke: "' + input + '"\n(HTML tag akan di-render!)';
+        }
+        outputEl.style.color = 'var(--fg)';
+
+        // Flash
+        target.style.borderColor = 'var(--accent2)';
+        target.style.boxShadow = '0 0 20px rgba(16,185,129,0.2)';
+        setTimeout(() => {
+            target.style.borderColor = 'var(--border)';
+            target.style.boxShadow = 'none';
+        }, 600);
+    }
+
+    // ============================================
+    //  DEMO: DOM STYLE
+    // ============================================
+
+    function applyInlineStyle() {
+        const target = document.getElementById('style-target');
+        const color = document.getElementById('styleColor').value;
+        const size = document.getElementById('styleSize').value;
+        const radius = document.getElementById('styleRadius').value;
+
+        target.style.color = color;
+        target.style.fontSize = size + 'px';
+        target.style.borderRadius = radius + 'px';
+        target.style.borderColor = color;
+    }
+
+    function toggleClass(className) {
+        const target = document.getElementById('style-target');
+        target.classList.toggle(className);
+        const hasClass = target.classList.contains(className);
+        showToast((hasClass ? 'Ditambahkan' : 'Dihapus') + ': class "' + className + '"', 'info');
+    }
+
+    function resetStyleDemo() {
+        const target = document.getElementById('style-target');
+        target.style.color = '';
+        target.style.fontSize = '';
+        target.style.borderRadius = '';
+        target.style.borderColor = '';
+        target.className = '';
+        target.classList.add('event-target');
+        document.getElementById('styleColor').value = '#f59e0b';
+        document.getElementById('styleSize').value = 15;
+        document.getElementById('styleRadius').value = 16;
+        showToast('Style direset', 'info');
+    }
+
+    // ============================================
+    //  DEMO: CREATE & DELETE DOM
+    // ============================================
+
+    let domCreateCounter = 0;
+
+    function createDOMElement() {
+        const input = document.getElementById('createElementInput');
+        const area = document.getElementById('dom-create-area');
+        const outputEl = document.getElementById('out-dom-create');
+        const emptyMsg = document.getElementById('empty-message');
+        const text = input.value.trim() || 'Item ' + (++domCreateCounter);
+
+        if (emptyMsg) emptyMsg.remove();
+
+        // createElement + appendChild
+        const el = document.createElement('div');
+        el.style.cssText = 'background:var(--bg-code); border:1px solid var(--border); border-radius:8px; padding:10px 16px; display:flex; align-items:center; gap:8px; animation:toastIn 0.3s;';
+        el.innerHTML = '<span style="flex:1; font-size:13px;">' + text + '</span><button onclick="this.parentElement.remove()" style="background:none; border:none; color:var(--accent3); cursor:pointer; font-size:14px; padding:2px 6px; border-radius:4px; transition:all 0.2s;" onmouseover="this.style.background=\'rgba(239,68,68,0.2)\'" onmouseout="this.style.background=\'none\'"><i class="fas fa-times"></i></button>';
+
+        area.appendChild(el);
+        outputEl.textContent = 'createElement("div") + appendChild()\nDitambahkan: "' + text + '"';
+        outputEl.style.color = 'var(--accent2)';
+
+        input.value = '';
+        input.focus();
+    }
+
+    // Enter key untuk input create
+    document.getElementById('createElementInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') createDOMElement();
+    });
+
+    function clearDOMElements() {
+        const area = document.getElementById('dom-create-area');
+        area.innerHTML = '<div style="font-size:13px; color:var(--fg-muted); align-self:center;" id="empty-message">Belum ada item. Ketik dan klik "Tambah".</div>';
+        domCreateCounter = 0;
+        document.getElementById('out-dom-create').textContent = 'Semua elemen dihapus dengan innerHTML = ""';
+        document.getElementById('out-dom-create').style.color = 'var(--accent3)';
+    }
+
+    // ============================================
+    //  DEMO: EVENT BOX
+    // ============================================
+
+    const eventLog = document.getElementById('event-log');
+    let eventCount = 0;
+
+    function logEvent(type, detail) {
+        eventCount++;
+        const time = new Date().toLocaleTimeString();
+        const colors = {
+            'click': 'var(--accent3)',
+            'mouseenter': 'var(--accent)',
+            'mouseleave': 'var(--fg-muted)',
+            'dblclick': 'var(--accent2)',
+            'contextmenu': '#8b5cf6'
+        };
+        const color = colors[type] || 'var(--fg)';
+
+        if (eventCount === 1) eventLog.innerHTML = '';
+        const line = document.createElement('div');
+        line.innerHTML = '<span style="color:var(--fg-muted);">[' + time + ']</span> <span style="color:' + color + '; font-weight:600;">' + type + '</span> ' + detail;
+        eventLog.appendChild(line);
+        eventLog.scrollTop = eventLog.scrollHeight;
+    }
+
+    // Click
+    const clickBox = document.getElementById('event-click');
+    clickBox.addEventListener('click', () => {
+        logEvent('click', '— Kotak CLICK ditekan');
+        clickBox.style.transform = 'scale(0.9)';
+        setTimeout(() => clickBox.style.transform = '', 150);
+    });
+
+    // Hover
+    const hoverBox = document.getElementById('event-hover');
+    hoverBox.addEventListener('mouseenter', () => {
+        logEvent('mouseenter', '— Mouse masuk kotak HOVER');
+        hoverBox.style.transform = 'scale(1.1)';
+        hoverBox.style.boxShadow = '0 0 20px rgba(245,158,11,0.4)';
+    });
+    hoverBox.addEventListener('mouseleave', () => {
+        logEvent('mouseleave', '— Mouse keluar kotak HOVER');
+        hoverBox.style.transform = '';
+        hoverBox.style.boxShadow = '';
+    });
+
+    // Double Click
+    const dblBox = document.getElementById('event-dblclick');
+    dblBox.addEventListener('dblclick', () => {
+        logEvent('dblclick', '— Kotak DOUBLE CLICK ditekan 2x');
+        dblBox.style.background = 'rgba(16,185,129,0.5)';
+        setTimeout(() => dblBox.style.background = 'rgba(16,185,129,0.2)', 300);
+    });
+
+    // Context Menu (Right Click)
+    const contextBox = document.getElementById('event-context');
+    contextBox.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        logEvent('contextmenu', '— Right-click pada kotak (default dicegah)');
+        contextBox.style.transform = 'rotate(10deg)';
+        setTimeout(() => contextBox.style.transform = '', 300);
+    });
+
+    function clearEventLog() {
+        eventLog.innerHTML = '<span style="color:var(--fg-muted); font-style:italic;">Belum ada event. Coba klik, hover, atau double-click kotak di atas.</span>';
+        eventCount = 0;
+    }
+
+    // ============================================
+    //  DEMO: MOUSE TRACKER (Event Object)
+    // ============================================
+
+    const tracker = document.getElementById('mouse-tracker');
+    const dot = document.getElementById('mouse-dot');
+    const info = document.getElementById('mouse-info');
+
+    tracker.addEventListener('mousemove', (e) => {
+        const rect = tracker.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        dot.style.left = x + 'px';
+        dot.style.top = y + 'px';
+
+        info.innerHTML =
+            '<div style="color:var(--accent);">event.type: <strong>"' + e.type + '"</strong></div>' +
+            '<div>event.clientX: ' + e.clientX + '</div>' +
+            '<div>event.clientY: ' + e.clientY + '</div>' +
+            '<div>offsetX: ' + Math.round(x) + ' | offsetY: ' + Math.round(y) + '</div>' +
+            '<div>event.target: ' + e.target.tagName.toLowerCase() + '</div>' +
+            '<div>event.button: ' + e.button + '</div>';
+
+        tracker.style.borderColor = 'var(--accent3)';
+    });
+
+    tracker.addEventListener('mouseleave', () => {
+        tracker.style.borderColor = 'var(--border)';
+        info.innerHTML = '<span style="color:var(--fg-muted); font-style:italic;">Gerakkan mouse ke sini...</span>';
+    });
+
+    tracker.addEventListener('click', (e) => {
+        const rect = tracker.getBoundingClientRect();
+        // Buat ripple effect
+        const ripple = document.createElement('div');
+        ripple.style.cssText = 'position:absolute; width:10px; height:10px; background:rgba(239,68,68,0.6); border-radius:50%; transform:scale(1); pointer-events:none; left:' + (e.clientX - rect.left - 5) + 'px; top:' + (e.clientY - rect.top - 5) + 'px; animation:rippleAnim 0.6s forwards;';
+        tracker.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 600);
+    });
+
+    // Ripple animation
+    const rippleStyle = document.createElement('style');
+    rippleStyle.textContent = '@keyframes rippleAnim { to { transform: scale(8); opacity: 0; } }';
+    document.head.appendChild(rippleStyle);
+
+    // ============================================
+    //  DEMO: EVENT BUBBLING
+    // ============================================
+
+    const bubbleLog = document.getElementById('bubble-log');
+    let bubbleCount = 0;
+
+    function logBubble(phase, element) {
+        bubbleCount++;
+        const colors = {
+            'Child': 'var(--accent2)',
+            'Parent': 'var(--accent)',
+            'Grandparent': 'var(--accent3)'
+        };
+        if (bubbleCount === 1) bubbleLog.innerHTML = '';
+
+        const line = document.createElement('div');
+        line.innerHTML = '<span style="color:' + colors[element] + '; font-weight:700;">' + element + '</span> menangkap event (phase: ' + phase + ')';
+        bubbleLog.appendChild(line);
+        bubbleLog.scrollTop = bubbleLog.scrollHeight;
+    }
+
+    document.getElementById('bubble-child').addEventListener('click', (e) => {
+        logBubble('target', 'Child');
+        e.currentTarget.style.background = 'rgba(16,185,129,0.3)';
+        setTimeout(() => e.currentTarget.style.background = 'rgba(16,185,129,0.08)', 400);
+    });
+
+    document.getElementById('bubble-parent').addEventListener('click', (e) => {
+        logBubble('bubble', 'Parent');
+        e.currentTarget.style.background = 'rgba(245,158,11,0.3)';
+        setTimeout(() => e.currentTarget.style.background = 'rgba(245,158,11,0.08)', 400);
+    });
+
+    document.getElementById('bubble-grandparent').addEventListener('click', (e) => {
+        logBubble('bubble', 'Grandparent');
+        e.currentTarget.style.background = 'rgba(239,68,68,0.2)';
+        setTimeout(() => e.currentTarget.style.background = 'rgba(239,68,68,0.08)', 400);
+    });
+
+    // ============================================
+    //  DEMO: EVENT DELEGATION
+    // ============================================
+
+    const delegationList = document.getElementById('delegation-list');
+    let delegationCounter = 3;
+
+    // Satu event listener di parent untuk semua child
+    delegationList.addEventListener('click', (e) => {
+        if (e.target.tagName === 'LI') {
+            const id = e.target.dataset.id;
+            const text = e.target.textContent;
+            e.target.style.background = 'rgba(239,68,68,0.2)';
+            e.target.style.color = 'var(--accent3)';
+            setTimeout(() => {
+                e.target.remove();
+                document.getElementById('out-delegation').textContent =
+                    'Event Delegation: event.target.dataset.id = ' + id + '\nElemen "' + text.split('—')[0].trim() + '" dihapus dari parent listener';
+                document.getElementById('out-delegation').style.color = 'var(--accent3)';
+            }, 300);
+        }
+    });
+
+    // Hover effect via delegation
+    delegationList.addEventListener('mouseover', (e) => {
+        if (e.target.tagName === 'LI') {
+            e.target.style.background = 'rgba(139,92,246,0.15)';
+            e.target.style.color = '#c4b5fd';
+        }
+    });
+    delegationList.addEventListener('mouseout', (e) => {
+        if (e.target.tagName === 'LI') {
+            e.target.style.background = '';
+            e.target.style.color = '';
+        }
+    });
+
+    function addDelegationItem() {
+        const input = document.getElementById('delegation-input');
+        const text = input.value.trim() || 'Item ' + (++delegationCounter);
+        const li = document.createElement('li');
+        li.dataset.id = delegationCounter;
+        li.style.cssText = 'padding:10px 14px; border-radius:6px; cursor:pointer; transition:all 0.2s; font-size:14px;';
+        li.textContent = text + ' — klik untuk hapus';
+        delegationList.appendChild(li);
+        document.getElementById('out-delegation').textContent = 'Item baru ditambahkan. Klik item mana saja untuk menghapus — termasuk item yang baru ditambahkan!';
+        document.getElementById('out-delegation').style.color = 'var(--accent2)';
+        input.value = '';
+    }
+
+    // Enter key untuk delegation input
+    document.getElementById('delegation-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') addDelegationItem();
+    });
+
+    // ============================================
+    //  HERO CANVAS — Partikel animasi
+    // ============================================
+
+    const canvas = document.getElementById('heroCanvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    let animFrame;
+
+    function resizeCanvas() {
+        const parent = canvas.parentElement;
+        canvas.width = parent.offsetWidth;
+        canvas.height = parent.offsetHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    class Particle {
+        constructor() {
+            this.reset();
+        }
+        reset() {
+            this.x = Math.random() * canvas.width;
+            this.y = canvas.height + Math.random() * 100;
+            this.size = Math.random() * 2.5 + 0.5;
+            this.speedY = -(Math.random() * 0.8 + 0.2);
+            this.speedX = (Math.random() - 0.5) * 0.4;
+            this.opacity = Math.random() * 0.5 + 0.2;
+            this.color = ['#f59e0b', '#10b981', '#ef4444', '#f7df1e', '#8b5cf6'][Math.floor(Math.random() * 5)];
+        }
+        update() {
+            this.y += this.speedY;
+            this.x += this.speedX;
+            this.opacity -= 0.002;
+            if (this.y < -10 || this.opacity <= 0) this.reset();
+        }
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.globalAlpha = Math.max(0, this.opacity);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+    }
+
+    // Inisialisasi partikel
+    for (let i = 0; i < 60; i++) {
+        const p = new Particle();
+        p.y = Math.random() * canvas.height; // sebar awal
+        particles.push(p);
+    }
+
+    // Periksa reduced motion preference
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function animateParticles() {
+        if (prefersReducedMotion) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+            p.update();
+            p.draw();
+        });
+        animFrame = requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    // ============================================
+    //  KEYBOARD SHORTCUT: Ctrl+Enter untuk run
+    // ============================================
+
+    document.querySelectorAll('.code-editor').forEach(editor => {
+        editor.addEventListener('keydown', (e) => {
+            // Tab key untuk indent
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = editor.selectionStart;
+                const end = editor.selectionEnd;
+                editor.value = editor.value.substring(0, start) + '  ' + editor.value.substring(end);
+                editor.selectionStart = editor.selectionEnd = start + 2;
+            }
+            // Ctrl+Enter untuk menjalankan kode
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                // Cari tombol run terdekat
+                const section = editor.closest('.demo-box');
+                const runBtn = section.querySelector('.btn-run');
+                if (runBtn) runBtn.click();
+            }
+        });
+    });
+
+    // ============================================
+    //  Inisialisasi awal
+    // ============================================
+
+    // Set active link saat pertama kali load
+    updateActiveLink();
+</script>
+
+</body>
+</html>
